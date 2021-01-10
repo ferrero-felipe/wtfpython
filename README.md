@@ -2,7 +2,7 @@
 <h1 align="center">What the f*ck Python! 😱</h1>
 <p align="center">Exploring and understanding Python through surprising snippets.</p>
 
-Translations: [Chinese 中文](https://github.com/leisurelicht/wtfpython-cn) | [Add translation](https://github.com/satwikkansal/wtfpython/issues/new?title=Add%20translation%20for%20[LANGUAGE]&body=Expected%20time%20to%20finish:%20[X]%20weeks.%20I%27ll%20start%20working%20on%20it%20from%20[Y].)
+Translations: [Chinese 中文](https://github.com/leisurelicht/wtfpython-cn) | [Vietnamese Tiếng Việt](https://github.com/vuduclyunitn/wtfptyhon-vi) | [Add translation](https://github.com/satwikkansal/wtfpython/issues/new?title=Add%20translation%20for%20[LANGUAGE]&body=Expected%20time%20to%20finish:%20[X]%20weeks.%20I%27ll%20start%20working%20on%20it%20from%20[Y].)
 
 Other modes: [Interactive](https://colab.research.google.com/github/satwikkansal/wtfpython/blob/master/irrelevant/wtf.ipynb) | [CLI](https://pypi.python.org/pypi/wtfpython)
 
@@ -14,7 +14,7 @@ While some of the examples you see below may not be WTFs in the truest sense, bu
 
 If you're an experienced Python programmer, you can take it as a challenge to get most of them right in the first attempt. You may have already experienced some of them before, and I might be able to revive sweet old memories of yours! :sweat_smile:
 
-PS: If you're a returning reader, you can learn about the new modifications [here](https://github.com/satwikkansal/wtfpython/releases/).
+PS: If you're a returning reader, you can learn about the new modifications [here](https://github.com/satwikkansal/wtfpython/releases/) (the examples marked with asterisk are the ones added in the latest major revision). 
 
 So, here we go...
 
@@ -44,6 +44,7 @@ So, here we go...
     + [▶ The sticky output function](#-the-sticky-output-function)
     + [▶ The chicken-egg problem *](#-the-chicken-egg-problem-)
     + [▶ Subclass relationships](#-subclass-relationships)
+    + [▶ Methods equality and identity](#-methods-equality-and-identity)
     + [▶ All-true-ation *](#-all-true-ation-)
     + [▶ The surprising comma](#-the-surprising-comma)
     + [▶ Strings and the backslashes](#-strings-and-the-backslashes)
@@ -51,7 +52,6 @@ So, here we go...
     + [▶ Half triple-quoted strings](#-half-triple-quoted-strings)
     + [▶ What's wrong with booleans?](#-whats-wrong-with-booleans)
     + [▶ Class attributes and instance attributes](#-class-attributes-and-instance-attributes)
-    + [▶ Non-reflexive class method *](#-non-reflexive-class-method-)
     + [▶ yielding None](#-yielding-none)
     + [▶ Yielding from... return! *](#-yielding-from-return-)
     + [▶ Nan-reflexivity *](#-nan-reflexivity-)
@@ -92,6 +92,8 @@ So, here we go...
   * [Section: Miscellaneous](#section-miscellaneous)
     + [▶ `+=` is faster](#--is-faster)
     + [▶ Let's make a giant string!](#-lets-make-a-giant-string)
+    + [▶ Slowing down `dict` lookups *](#-slowing-down-dict-lookups-)
+    + [▶ Bloating instance `dict`s *](#-bloating-instance-dicts-)
     + [▶ Minor Ones *](#-minor-ones-)
 - [Contributing](#contributing)
 - [Acknowledgements](#acknowledgements)
@@ -181,6 +183,7 @@ File "<stdin>", line 1
 SyntaxError: invalid syntax
 
 >>> (a := "wtf_walrus") # This works though
+'wtf_walrus'
 >>> a
 'wtf_walrus'
 ```
@@ -195,6 +198,7 @@ SyntaxError: invalid syntax
 (6, 9)
 
 >>> (a := 6, 9)
+(6, 9)
 >>> a
 6
 
@@ -348,7 +352,7 @@ Makes sense, right?
   ![image](/images/string-intern/string_intern.png)
 + When `a` and `b` are set to `"wtf!"` in the same line, the Python interpreter creates a new object, then references the second variable at the same time. If you do it on separate lines, it doesn't "know" that there's already `"wtf!"` as an object (because `"wtf!"` is not implicitly interned as per the facts mentioned above). It's a compile-time optimization. This optimization doesn't apply to 3.7.x versions of CPython (check this [issue](https://github.com/satwikkansal/wtfpython/issues/100) for more discussion).
 + A compile unit in an interactive environment like IPython consists of a single statement, whereas it consists of the entire module in case of modules. `a, b = "wtf!", "wtf!"` is single statement, whereas `a = "wtf!"; b = "wtf!"` are two statements in a single line. This explains why the identities are different in `a = "wtf!"; b = "wtf!"`, and also explain why they are same when invoked in `some_file.py`
-+ The abrupt change in the output of the fourth snippet is due to a [peephole optimization](https://en.wikipedia.org/wiki/Peephole_optimization) technique known as Constant folding. This means the expression `'a'*20` is replaced by `'aaaaaaaaaaaaaaaaaaaa'` during compilation to save a  few clock cycles during runtime. Constant folding only occurs for strings having a length of less than 20. (Why? Imagine the size of `.pyc` file generated as a result of the expression `'a'*10**10`). [Here's](https://github.com/python/cpython/blob/3.6/Python/peephole.c#L288) the implementation source for the same.
++ The abrupt change in the output of the fourth snippet is due to a [peephole optimization](https://en.wikipedia.org/wiki/Peephole_optimization) technique known as Constant folding. This means the expression `'a'*20` is replaced by `'aaaaaaaaaaaaaaaaaaaa'` during compilation to save a  few clock cycles during runtime. Constant folding only occurs for strings having a length of less than 21. (Why? Imagine the size of `.pyc` file generated as a result of the expression `'a'*10**10`). [Here's](https://github.com/python/cpython/blob/3.6/Python/peephole.c#L288) the implementation source for the same.
 + Note: In Python 3.7, Constant folding was moved out from peephole optimizer to the new AST optimizer with some change in logic as well, so the fourth snippet doesn't work for Python 3.7. You can read more about the change [here](https://bugs.python.org/issue11549). 
 
 ---
@@ -379,7 +383,7 @@ False
 
 #### 💡 Explanation:
 
-As per https://docs.python.org/2/reference/expressions.html#not-in
+As per https://docs.python.org/3/reference/expressions.html#membership-test-operations
 
 > Formally, if a, b, c, ..., y, z are expressions and op1, op2, ..., opN are comparison operators, then a op1 b op2 c ... y opN z is equivalent to a op1 b and b op2 c and ... y opN z, except that each expression is evaluated at most once.
 
@@ -673,7 +677,7 @@ class OrderedDictWithHash(OrderedDict):
 True
 >>> dictionary == another_ordered_dict # and b == c
 True
->>> ordered_dict == another_ordered_dict # the why isn't c == a ??
+>>> ordered_dict == another_ordered_dict # then why isn't c == a ??
 False
 
 # We all know that a set consists of only unique elements,
@@ -705,7 +709,7 @@ What is going on here?
 - The reason why intransitive equality didn't hold among `dictionary`, `ordered_dict` and `another_ordered_dict` is because of the way `__eq__` method is implemented in `OrderedDict` class. From the [docs](https://docs.python.org/3/library/collections.html#ordereddict-objects)
   
     > Equality tests between OrderedDict objects are order-sensitive and are implemented as `list(od1.items())==list(od2.items())`. Equality tests between `OrderedDict` objects and other Mapping objects are order-insensitive like regular dictionaries.
-- The reason for this equality is behavior is that it allows `OrderedDict` objects to be directly substituted anywhere a regular dictionary is used.
+- The reason for this equality in behavior is that it allows `OrderedDict` objects to be directly substituted anywhere a regular dictionary is used.
 - Okay, so why did changing the order affect the length of the generated `set` object? The answer is the lack of intransitive equality only. Since sets are "unordered" collections of unique elements, the order in which elements are inserted shouldn't matter. But in this case, it does matter. Let's break it down a bit,
     ```py
     >>> some_set = set()
@@ -840,7 +844,7 @@ for i, some_dict[i] in enumerate(some_string):
 
   **💡 Explanation:**
 
-  - The assignment statement `i = 10` never affects the iterations of the loop because of the way for loops work in Python. Before the beginning of every iteration, the next item provided by the iterator (`range(4)` this case) is unpacked and assigned the target list variables (`i` in this case).
+  - The assignment statement `i = 10` never affects the iterations of the loop because of the way for loops work in Python. Before the beginning of every iteration, the next item provided by the iterator (`range(4)` in this case) is unpacked and assigned the target list variables (`i` in this case).
 
 * The `enumerate(some_string)` function yields a new value `i` (a counter going up) and a character from the `some_string` in each iteration. It then sets the (just assigned) `i` key of the dictionary `some_dict` to that character. The unrolling of the loop can be simplified as:
   ```py
@@ -1024,7 +1028,8 @@ Even when the values of `x` were different in every iteration prior to appending
 
 - When defining a function inside a loop that uses the loop variable in its body, the loop function's closure is bound to the variable, not its value. So all of the functions use the latest value assigned to the variable for computation.
 
-- To get the desired behavior you can pass in the loop variable as a named variable to the function. **Why does this work?** Because this will define the variable again within the function's scope.
+- To get the desired behavior you can pass in the loop variable as a named variable to the function. **Why does this work?** Because this will define the variable 
+within the function's scope.
 
     ```py
     funcs = []
@@ -1116,6 +1121,107 @@ The Subclass relationships were expected to be transitive, right? (i.e., if `A` 
 * More detailed explanation can be found [here](https://www.naftaliharris.com/blog/python-subclass-intransitivity/).
 
 ---
+
+### ▶ Methods equality and identity
+<!-- Example ID: 94802911-48fe-4242-defa-728ae893fa32 --->
+
+1.
+```py
+class SomeClass:
+    def method(self):
+        pass
+
+    @classmethod
+    def classm(cls):
+        pass
+
+    @staticmethod
+    def staticm():
+        pass
+```
+
+**Output:**
+```py
+>>> print(SomeClass.method is SomeClass.method)
+True
+>>> print(SomeClass.classm is SomeClass.classm)
+False
+>>> print(SomeClass.classm == SomeClass.classm)
+True
+>>> print(SomeClass.staticm is SomeClass.staticm)
+True
+```
+
+Accessing `classm` twice, we get an equal object, but not the *same* one? Let's see what happens
+with instances of `SomeClass`:
+
+2.
+```py
+o1 = SomeClass()
+o2 = SomeClass()
+```
+
+**Output:**
+```py
+>>> print(o1.method == o2.method)
+False
+>>> print(o1.method == o1.method)
+True
+>>> print(o1.method is o1.method)
+False
+>>> print(o1.classm is o1.classm)
+False
+>>> print(o1.classm == o1.classm == o2.classm == SomeClass.classm)
+True
+>>> print(o1.staticm is o1.staticm is o2.staticm is SomeClass.staticm)
+True
+```
+
+Accessing` classm` or `method` twice, creates equal but not *same* objects for the same instance of `SomeClass`.
+
+#### 💡 Explanation
+* Functions are [descriptors](https://docs.python.org/3/howto/descriptor.html). Whenever a function is accessed as an
+attribute, the descriptor is invoked, creating a method object which "binds" the function with the object owning the
+attribute. If called, the method calls the function, implicitly passing the bound object as the first argument
+(this is how we get `self` as the first argument, despite not passing it explicitly).
+```py
+>>> o1.method
+<bound method SomeClass.method of <__main__.SomeClass object at ...>>
+```
+* Accessing the attribute multiple times creates a method object every time! Therefore `o1.method is o1.method` is
+never truthy. Accessing functions as class attributes (as opposed to instance) does not create methods, however; so
+`SomeClass.method is SomeClass.method` is truthy.
+```py
+>>> SomeClass.method
+<function SomeClass.method at ...>
+```
+* `classmethod` transforms functions into class methods. Class methods are descriptors that, when accessed, create
+a method object which binds the *class* (type) of the object, instead of the object itself.
+```py
+>>> o1.classm
+<bound method SomeClass.classm of <class '__main__.SomeClass'>>
+```
+* Unlike functions, `classmethod`s will create a method also when accessed as class attributes (in which case they
+bind the class, not to the type of it). So `SomeClass.classm is SomeClass.classm` is falsy.
+```py
+>>> SomeClass.classm
+<bound method SomeClass.classm of <class '__main__.SomeClass'>>
+```
+* A method object compares equal when both the functions are equal, and the bound objects are the same. So
+`o1.method == o1.method` is truthy, although not the same object in memory.
+* `staticmethod` transforms functions into a "no-op" descriptor, which returns the function as-is. No method
+objects are ever created, so comparison with `is` is truthy.
+```py
+>>> o1.staticm
+<function SomeClass.staticm at ...>
+>>> SomeClass.staticm
+<function SomeClass.staticm at ...>
+```
+* Having to create new "method" objects every time Python calls instance methods and having to modify the arguments
+every time in order to insert `self` affected performance badly.
+CPython 3.7 [solved it](https://bugs.python.org/issue26110) by introducing new opcodes that deal with calling methods
+without creating the temporary method objects. This is used only when the accessed function is actually called, so the
+snippets here are not affected, and still generate methods :)
 
 ### ▶ All-true-ation *
 
@@ -1224,7 +1330,7 @@ True
     >>> print("\n")
 
     >>> print(r"\\n")
-    '\\\\n'
+    '\\n'
     ```
 - This means when a parser encounters a backslash in a raw string, it expects another character following it. And in our case (`print(r"\")`), the backslash escaped the trailing quote, leaving the parser without a terminating quote (hence the `SyntaxError`). That's why backslashes don't work at the end of a raw string.
 
@@ -1275,7 +1381,7 @@ SyntaxError: EOF while scanning triple-quoted string literal
 ```
 
 #### 💡 Explanation:
-+ Python supports implicit [string literal concatenation](https://docs.python.org/2/reference/lexical_analysis.html#string-literal-concatenation), Example,
++ Python supports implicit [string literal concatenation](https://docs.python.org/3/reference/lexical_analysis.html#string-literal-concatenation), Example,
   ```
   >>> print("wtf" "python")
   wtfpython
@@ -1446,49 +1552,6 @@ True
 
 ---
 
-### ▶ Non-reflexive class method *
-
-<!-- Example ID: 3649771a-f733-413c-8060-3f9f167b83fd -->
-
-```py
-class SomeClass:
-        def instance_method(self):
-                pass
-        
-        @classmethod
-        def class_method(cls):
-                pass
-```
-
-**Output:**
-
-```py
->>> SomeClass.instance_method is SomeClass.instance_method
-True
->>> SomeClass.class_method is SomeClass.class_method
-False
->>> id(SomeClass.class_method) == id(SomeClass.class_method)
-True
-```
-
-#### 💡 Explanation:
-
-- The reason `SomeClass.class_method is SomeClass.class_method` is `False` is due to the `@classmethod` decorator. 
-
-  ```py
-  >>> SomeClass.instance_method
-  <function __main__.SomeClass.instance_method(self)>
-  >>> SomeClass.class_method
-  <bound method SomeClass.class_method of <class '__main__.SomeClass'>
-  ```
-
-  A new bound method every time `SomeClass.class_method` is accessed.
-
--  `id(SomeClass.class_method) == id(SomeClass.class_method)` returned `True` because the second allocation of memory for `class_method` happened at the same location of first deallocation (See Deep Down, we're all the same example for more detailed explanation). 
-
----
-
-
 ### ▶ yielding None
 <!-- Example ID: 5a40c241-2c30-40d0-8ba9-cf7e097b3b53 --->
 ```py
@@ -1516,7 +1579,7 @@ def some_func(val):
 #### 💡 Explanation:
 - This is a bug in CPython's handling of `yield` in generators and comprehensions.
 - Source and explanation can be found here: https://stackoverflow.com/questions/32139885/yield-in-list-comprehensions-and-generator-expressions
-- Related bug report: http://bugs.python.org/issue10544
+- Related bug report: https://bugs.python.org/issue10544
 - Python 3.8+ no longer allows `yield` inside list comprehension and will throw a `SyntaxError`.
 
 ---
@@ -1691,12 +1754,13 @@ But I thought tuples were immutable...
 
 #### 💡 Explanation:
 
-* Quoting from https://docs.python.org/2/reference/datamodel.html
+* Quoting from https://docs.python.org/3/reference/datamodel.html
 
     > Immutable sequences
         An object of an immutable sequence type cannot change once it is created. (If the object contains references to other objects, these other objects may be mutable and may be modified; however, the collection of objects directly referenced by an immutable object cannot change.)
 
 * `+=` operator changes the list in-place. The item assignment doesn't work, but when the exception occurs, the item has already been changed in place.
+* There's also an explanation in [official Python FAQ](https://docs.python.org/3/faq/programming.html#why-does-a-tuple-i-item-raise-an-exception-when-the-addition-works).
 
 ---
 
@@ -1852,7 +1916,7 @@ a, b = a[b] = {}, 5
 
 #### 💡 Explanation:
 
-* According to [Python language reference](https://docs.python.org/2/reference/simple_stmts.html#assignment-statements), assignment statements have the form
+* According to [Python language reference](https://docs.python.org/3/reference/simple_stmts.html#assignment-statements), assignment statements have the form
   ```
   (target_list "=")+ (expression_list | yield_expression)
   ```
@@ -1930,7 +1994,7 @@ Yes, it runs for exactly **eight** times and stops.
 * It runs eight times because that's the point at which the dictionary resizes to hold more keys (we have eight deletion entries, so a resize is needed). This is actually an implementation detail.
 * How deleted keys are handled and when the resize occurs might be different for different Python implementations.
 * So for Python versions other than Python 2.7 - Python 3.5, the count might be different from 8 (but whatever the count is, it's going to be the same every time you run it). You can find some discussion around this [here](https://github.com/satwikkansal/wtfpython/issues/53) or in [this](https://stackoverflow.com/questions/44763802/bug-in-python-dict) StackOverflow thread.
-* Python 3.8 onwards, you'll see `RuntimeError: dictionary keys changed during iteration` exception if you try to do this.
+* Python 3.7.6 onwards, you'll see `RuntimeError: dictionary keys changed during iteration` exception if you try to do this.
 
 ---
 
@@ -1954,7 +2018,7 @@ class SomeClass:
 Deleted!
 ```
 
-Phew, deleted at last. You might have guessed what saved from `__del__` being called in our first attempt to delete `x`. Let's add more twists to the example.
+Phew, deleted at last. You might have guessed what saved `__del__` from being called in our first attempt to delete `x`. Let's add more twists to the example.
 
 2\.
 ```py
@@ -1973,14 +2037,16 @@ Okay, now it's deleted :confused:
 
 #### 💡 Explanation:
 + `del x` doesn’t directly call `x.__del__()`.
-+ Whenever `del x` is encountered, Python decrements the reference count for `x` by one, and `x.__del__()` when x’s reference count reaches zero.
-+ In the second output snippet, `y.__del__()` was not called because the previous statement (`>>> y`) in the interactive interpreter created another reference to the same object, thus preventing the reference count from reaching zero when `del y` was encountered.
-+ Calling `globals` caused the existing reference to be destroyed, and hence we can see "Deleted!" being printed (finally!).
++ When `del x` is encountered, Python deletes the name `x` from current scope and decrements by 1 the reference count of the object `x` referenced. `__del__()` is called only when the object's reference count reaches zero.
++ In the second output snippet, `__del__()` was not called because the previous statement (`>>> y`) in the interactive interpreter created another reference to the same object (specifically, the `_` magic variable which references the result value of the last non `None` expression on the REPL), thus preventing the reference count from reaching zero when `del y` was encountered.
++ Calling `globals` (or really, executing anything that will have a non `None` result) caused `_` to reference the new result, dropping the existing reference. Now the reference count reached 0 and we can see "Deleted!" being printed (finally!).
 
 ---
 
 ### ▶ The out of scope variable
 <!-- Example ID: 75c03015-7be9-4289-9e22-4f5fdda056f7 --->
+
+1\.
 ```py
 a = 1
 def some_func():
@@ -1991,18 +2057,38 @@ def another_func():
     return a
 ```
 
+2\.
+```py
+def some_closure_func():
+    a = 1
+    def some_inner_func():
+        return a
+    return some_inner_func()
+
+def another_closure_func():
+    a = 1
+    def another_inner_func():
+        a += 1
+        return a
+    return another_inner_func()
+```
+
 **Output:**
 ```py
 >>> some_func()
 1
 >>> another_func()
 UnboundLocalError: local variable 'a' referenced before assignment
+
+>>> some_closure_func()
+1
+>>> another_closure_func()
+UnboundLocalError: local variable 'a' referenced before assignment
 ```
 
 #### 💡 Explanation:
-* When you make an assignment to a variable in scope, it becomes local to that scope. So `a` becomes local to the scope of `another_func`,  but it has not been initialized previously in the same scope, which throws an error.
-* Read [this](http://sebastianraschka.com/Articles/2014_python_scope_and_namespaces.html) short but an awesome guide to learn more about how namespaces and scope resolution works in Python.
-* To modify the outer scope variable `a` in `another_func`, use `global` keyword.
+* When you make an assignment to a variable in scope, it becomes local to that scope. So `a` becomes local to the scope of `another_func`, but it has not been initialized previously in the same scope, which throws an error.
+* To modify the outer scope variable `a` in `another_func`, we have to use the `global` keyword.
   ```py
   def another_func()
       global a
@@ -2015,6 +2101,25 @@ UnboundLocalError: local variable 'a' referenced before assignment
   >>> another_func()
   2
   ```
+* In `another_closure_func`, `a` becomes local to the scope of `another_inner_func`, but it has not been initialized previously in the same scope, which is why it throws an error. 
+* To modify the outer scope variable `a` in `another_inner_func`, use the `nonlocal` keyword. The nonlocal statement is used to refer to variables defined in the nearest outer (excluding the global) scope.
+  ```py
+  def another_func():
+      a = 1
+      def another_inner_func():
+          nonlocal a
+          a += 1
+          return a
+      return another_inner_func()
+  ```
+
+  **Output:**
+  ```py
+  >>> another_func()
+  2
+  ```
+* The keywords `global` and `nonlocal` tell the python interpreter to not delcare new variables and look them up in the corresponding outer scopes.
+* Read [this](https://sebastianraschka.com/Articles/2014_python_scope_and_namespaces.html) short but an awesome guide to learn more about how namespaces and scope resolution works in Python.
 
 ---
 
@@ -2113,7 +2218,7 @@ Where did element `3` go from the `numbers` list?
                 result.append(elem)
             yield tuple(result)
     ```
-- So the function takes in arbitrary number of itreable objects, adds each of their items to the `result` list by calling the `next` function on them, and stops whenever any of the iterable is exhausted. 
+- So the function takes in arbitrary number of iterable objects, adds each of their items to the `result` list by calling the `next` function on them, and stops whenever any of the iterable is exhausted. 
 - The caveat here is when any iterable is exhausted, the existing elements in the `result` list are discarded. That's what happened with `3` in the `numbers_iter`.
 - The correct way to do the above using `zip` would be,
     ```py
@@ -2522,17 +2627,17 @@ None
 ```py
 def some_recursive_func(a):
     if a[0] == 0:
-        return 
+        return
     a[0] -= 1
     some_recursive_func(a)
     return a
 
 def similar_recursive_func(a):
-        if a == 0:
-                return a
-        a -= 1
-        similar_recursive_func(a)
+    if a == 0:
         return a
+    a -= 1
+    similar_recursive_func(a)
+    return a
 ```
 
 **Output:**
@@ -2575,10 +2680,10 @@ def similar_recursive_func(a):
   >>> assert a == b, "Values are not equal"
   Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
-  AssertionError: Values aren not equal
+  AssertionError: Values are not equal
   ```
 
-* As for the fifth snippet, most methods that modify the items of sequence/mapping objects like `list.append`, `dict.update`, `list.sort`, etc. modify the objects in-place and return `None`. The rationale behind this is to improve performance by avoiding making a copy of the object if the operation can be done in-place (Referred from [here](http://docs.python.org/2/faq/design.html#why-doesn-t-list-sort-return-the-sorted-list)).
+* As for the fifth snippet, most methods that modify the items of sequence/mapping objects like `list.append`, `dict.update`, `list.sort`, etc. modify the objects in-place and return `None`. The rationale behind this is to improve performance by avoiding making a copy of the object if the operation can be done in-place (Referred from [here](https://docs.python.org/3/faq/design.html#why-doesn-t-list-sort-return-the-sorted-list)).
 
 * Last one should be fairly obvious, mutable object (like `list`) can be altered in the function, and the reassignation of an immutable (`a -= 1`) is not an alteration of the value.
 
@@ -2608,7 +2713,7 @@ def similar_recursive_func(a):
 
 #### 💡 Explanation:
 
-- It might appear at first that the default separator for split is a single space `' '`, but as per the [docs](https://docs.python.org/2.7/library/stdtypes.html#str.split)
+- It might appear at first that the default separator for split is a single space `' '`, but as per the [docs](https://docs.python.org/3/library/stdtypes.html#str.split)
     >  If sep is not specified or is `None`, a different splitting algorithm is applied: runs of consecutive whitespace are regarded as a single separator, and the result will contain no empty strings at the start or end if the string has leading or trailing whitespace. Consequently, splitting an empty string or a string consisting of just whitespace with a None separator returns `[]`.
     > If sep is given, consecutive delimiters are not grouped together and are deemed to delimit empty strings (for example, `'1,,2'.split(',')` returns `['1', '', '2']`). Splitting an empty string with a specified separator returns `['']`.
 - Noticing how the leading and trailing whitespaces are handled in the following snippet will make things clear,
@@ -2774,7 +2879,7 @@ Sshh... It's a super-secret.
 
 #### 💡 Explanation:
 + `antigravity` module is one of the few easter eggs released by Python developers.
-+ `import antigravity` opens up a web browser pointing to the [classic XKCD comic](http://xkcd.com/353/) about Python.
++ `import antigravity` opens up a web browser pointing to the [classic XKCD comic](https://xkcd.com/353/) about Python.
 + Well, there's more to it. There's **another easter egg inside the easter egg**. If you look at the [code](https://github.com/python/cpython/blob/master/Lib/antigravity.py#L7-L17), there's a function defined that purports to implement the [XKCD's geohashing algorithm](https://xkcd.com/426/).
 
 ---
@@ -3346,6 +3451,101 @@ Let's increase the number of iterations by a factor of 10.
 
 ---
 
+### ▶ Slowing down `dict` lookups *
+<!-- Example ID: c9c26ce6-df0c-47f7-af0b-966b9386d4c3 --->
+```py
+some_dict = {str(i): 1 for i in range(1_000_000)}
+another_dict = {str(i): 1 for i in range(1_000_000)}
+```
+
+**Output:**
+```py
+>>> %timeit some_dict['5']
+28.6 ns ± 0.115 ns per loop (mean ± std. dev. of 7 runs, 10000000 loops each)
+>>> some_dict[1] = 1
+>>> %timeit some_dict['5']
+37.2 ns ± 0.265 ns per loop (mean ± std. dev. of 7 runs, 10000000 loops each)
+
+>>> %timeit another_dict['5']
+28.5 ns ± 0.142 ns per loop (mean ± std. dev. of 7 runs, 10000000 loops each)
+>>> another_dict[1]  # Trying to access a key that doesn't exist
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+KeyError: 1
+>>> %timeit another_dict['5']
+38.5 ns ± 0.0913 ns per loop (mean ± std. dev. of 7 runs, 10000000 loops each)
+```
+Why are same lookups becoming slower?
+
+#### 💡 Explanation:
++ CPython has a generic dictionary lookup function that handles all types of keys (`str`, `int`, any object ...), and a specialized one for the common case of dictionaries composed of `str`-only keys.
++ The specialized function (named `lookdict_unicode` in CPython's [source](https://github.com/python/cpython/blob/522691c46e2ae51faaad5bbbce7d959dd61770df/Objects/dictobject.c#L841)) knows all existing keys (including the looked-up key) are strings, and uses the faster & simpler string comparison to compare keys, instead of calling the `__eq__` method.
++ The first time a `dict` instance is accessed with a non-`str` key, it's modified so future lookups use the generic function.
++ This process is not reversible for the particular `dict` instance, and the key doesn't even have to exist in the dictionary. That's why attempting a failed lookup has the same effect.
+
+
+### ▶ Bloating instance `dict`s *
+<!-- Example ID: fe706ab4-1615-c0ba-a078-76c98cbe3f48 --->
+```py
+import sys
+
+class SomeClass:
+    def __init__(self):
+        self.some_attr1 = 1
+        self.some_attr2 = 2
+        self.some_attr3 = 3
+        self.some_attr4 = 4
+
+
+def dict_size(o):
+    return sys.getsizeof(o.__dict__)
+
+```
+
+**Output:** (Python 3.8, other Python 3 versions may vary a little)
+```py
+>>> o1 = SomeClass()
+>>> o2 = SomeClass()
+>>> dict_size(o1)
+104
+>>> dict_size(o2)
+104
+>>> del o1.some_attr1
+>>> o3 = SomeClass()
+>>> dict_size(o3)
+232
+>>> dict_size(o1)
+232
+```
+
+Let's try again... In a new interpreter:
+
+```py
+>>> o1 = SomeClass()
+>>> o2 = SomeClass()
+>>> dict_size(o1)
+104  # as expected
+>>> o1.some_attr5 = 5
+>>> o1.some_attr6 = 6
+>>> dict_size(o1)
+360
+>>> dict_size(o2)
+272
+>>> o3 = SomeClass()
+>>> dict_size(o3)
+232
+```
+
+What makes those dictionaries become bloated? And why are newly created objects bloated as well?
+
+#### 💡 Explanation:
++ CPython is able to reuse the same "keys" object in multiple dictionaries. This was added in [PEP 412](https://www.python.org/dev/peps/pep-0412/) with the motivation to reduce memory usage, specifically in dictionaries of instances - where keys (instance attributes) tend to be common to all instances.
++ This optimization is entirely seamless for instance dictionaries, but it is disabled if certain assumptions are broken.
++ Key-sharing dictionaries do not support deletion; if an instance attribute is deleted, the dictionary is "unshared", and key-sharing is disabled for all future instances of the same class.
++ Additionaly, if the dictionary keys have be resized (because new keys are inserted), they are kept shared *only* if they are used by a exactly single dictionary (this allows adding many attributes in the `__init__` of the very first created instance, without causing an "unshare"). If multiple instances exist when a resize happens, key-sharing is disabled for all future instances of the same class: CPython can't tell if your instances are using the same set of attributes anymore, and decides to bail out on attempting to share their keys.
++ A small tip, if you aim to lower your program's memory footprint: don't delete instance attributes, and make sure to initialize all attributes in your `__init__`!
+
+
 ### ▶ Minor Ones *
 <!-- Example ID: f885cb82-f1e4-4daa-9ff3-972b14cb1324 --->
 * `join()` is a string operation instead of list operation. (sort of counter-intuitive at first usage)
@@ -3434,7 +3634,7 @@ Let's increase the number of iterations by a factor of 10.
     print(dis.dis(f))
     ```
      
-* Multiple Python threads won't run your *Python code* concurrently (yes, you heard it right!). It may seem intuitive to spawn several threads and let them execute your Python code concurrently, but, because of the [Global Interpreter Lock](https://wiki.python.org/moin/GlobalInterpreterLock) in Python, all you're doing is making your threads execute on the same core turn by turn. Python threads are good for IO-bound tasks, but to achieve actual parallelization in Python for CPU-bound tasks, you might want to use the Python [multiprocessing](https://docs.python.org/2/library/multiprocessing.html) module.
+* Multiple Python threads won't run your *Python code* concurrently (yes, you heard it right!). It may seem intuitive to spawn several threads and let them execute your Python code concurrently, but, because of the [Global Interpreter Lock](https://wiki.python.org/moin/GlobalInterpreterLock) in Python, all you're doing is making your threads execute on the same core turn by turn. Python threads are good for IO-bound tasks, but to achieve actual parallelization in Python for CPU-bound tasks, you might want to use the Python [multiprocessing](https://docs.python.org/3/library/multiprocessing.html) module.
 
 * Sometimes, the `print` method might not print values immediately. For example,
 
@@ -3446,7 +3646,7 @@ Let's increase the number of iterations by a factor of 10.
      time.sleep(3)
      ```
 
-     This will print the `wtfpython` after 10 seconds due to the `end` argument because the output buffer is flushed either after encountering `\n` or when the program finishes execution. We can force the buffer to flush by passing `flush=True` argument.
+     This will print the `wtfpython` after 3 seconds due to the `end` argument because the output buffer is flushed either after encountering `\n` or when the program finishes execution. We can force the buffer to flush by passing `flush=True` argument.
 
 * List slicing with out of the bounds indices throws no errors
   ```py
@@ -3465,7 +3665,7 @@ Let's increase the number of iterations by a factor of 10.
     True
     ```
 
-* `int('١٢٣٤٥٦٧٨٩')` returns `123456789` in Python 3. In Python, Decimal characters include digit characters, and all characters that can be used to form decimal-radix numbers, e.g. U+0660, ARABIC-INDIC DIGIT ZERO. Here's an [interesting story](http://chris.improbable.org/2014/8/25/adventures-in-unicode-digits/) related to this behavior of Python.
+* `int('١٢٣٤٥٦٧٨٩')` returns `123456789` in Python 3. In Python, Decimal characters include digit characters, and all characters that can be used to form decimal-radix numbers, e.g. U+0660, ARABIC-INDIC DIGIT ZERO. Here's an [interesting story](https://chris.improbable.org/2014/8/25/adventures-in-unicode-digits/) related to this behavior of Python.
 
 * You can separate numeric literals with underscores (for better readability) from Python 3 onwards.
 
@@ -3542,4 +3742,3 @@ I've received a few requests for the pdf (and epub) version of wtfpython. You ca
 
 
 **That's all folks!** For upcoming content like this, you can add your email [here](https://www.satwikkansal.xyz/content-like-wtfpython/).
-*PS: On a sidenote, consider donating a dollar to [plant a tree](https://teamtrees.org/).*
